@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Music Player</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-hue: 210;
+      --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      --accent-color: #ff4d8d;
+      --text-color: #ffffff;
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --theme-color: #6B73FF;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      overflow-x: hidden;
+      min-height: 100vh;
+      transition: all 0.5s ease;
+    }
+    
+    .container {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 3.5rem;
+      background: linear-gradient(90deg, #ff8a00, var(--accent-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 2px 15px rgba(0,0,0,0.3);
+      font-weight: 800;
+      letter-spacing: -1px;
+      animation: fadeInDown 1s ease;
+    }
+    
+    .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.8;
+      margin-bottom: 1.5rem;
+      font-weight: 300;
+      animation: fadeIn 1.5s ease;
+    }
+    
+    .player-container {
+      perspective: 1000px;
+      width: 280px;
+      height: 280px;
+      margin: 2rem auto;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.3s;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+      animation: scaleIn 0.8s ease;
+    }
+    
+    .player-disc {
+      width: 100%;
+      height: 100%;
+      background: url('https://i.imgur.com/JWZzU9O.png') center/cover;
+      border-radius: 50%;
+      transform-style: preserve-3d;
+      box-shadow: 
+        0 0 30px rgba(255,255,255,0.2),
+        0 0 60px rgba(255,0,255,0.4),
+        0 0 100px rgba(0,255,255,0.2);
+      transition: all 0.3s ease;
+      border: 3px solid rgba(255,255,255,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .player-disc::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+      border-radius: 50%;
+    }
+    
+    .player-disc.spin {
+      animation: spin 2.5s linear infinite;
+    }
+    
+    .player-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      color: #333;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+      transition: transform 0.3s;
+      z-index: 2;
+    }
+    
+    .player-center:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 1.5rem 0;
+      animation: fadeInUp 1s ease;
+    }
+    
+    button {
+      background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    
+    button i {
+      font-size: 1.1rem;
+    }
+    
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    button:active {
+      transform: translateY(1px);
+    }
+    
+    button:after {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 200%;
+      height: 200%;
+      background: rgba(255,255,255,0.15);
+      transform: rotate(30deg);
+      transition: all 0.4s;
+    }
+    
+    button:hover:after {
+      left: 100%;
+    }
+    
+    .song-info {
+      margin: 1.5rem 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      min-height: 2.5rem;
+      animation: fadeIn 1s ease;
+    }
+    
+    .song-chip {
+      display: inline-block;
+      padding: 0.8rem 1.8rem;
+      border-radius: 50px;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-weight: 700;
+    }
+    
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      margin: 1.5rem 0;
+      overflow: hidden;
+      animation: fadeIn 1s ease;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #12c2e9, #c471ed, var(--accent-color));
+      width: 0%;
+      transition: width 0.1s linear;
+      border-radius: 3px;
+    }
+    
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+    
+    .cover-art {
+      width: 220px;
+      height: 220px;
+      border-radius: 12px;
+      margin: 15px auto;
+      object-fit: cover;
+      display: none;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      transition: transform 0.3s;
+      border: 2px solid rgba(255,255,255,0.1);
+      animation: fadeIn 1s ease;
+    }
+    
+    .cover-art:hover {
+      transform: scale(1.03);
+    }
+    
+    .visualizer {
+      width: 100%;
+      height: 120px;
+      margin: 30px 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 4px;
+      padding: 0 10px;
+      animation: fadeIn 1s ease;
+    }
+    
+    .visualizer-bar {
+      width: 10px;
+      height: 20px;
+      background: linear-gradient(to top, #12c2e9, #c471ed);
+      border-radius: 5px;
+      transition: height 0.1s ease-out;
+    }
+    
+    .floating-particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: float linear infinite;
+    }
+    
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 1rem;
+      animation: fadeIn 1s ease;
+    }
+    
+    .volume-slider {
+      -webkit-appearance: none;
+      width: 120px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      outline: none;
+    }
+    
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .mode-selector {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+      gap: 10px;
+      animation: fadeIn 1s ease;
+    }
+    
+    .mode-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .mode-btn.active {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+    }
+    
+    /* Animations */
+    @keyframes spin {
+      100% { transform: rotateY(360deg); }
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+      100% { transform: translateY(0) rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+      
+      .player-container {
+        width: 220px;
+        height: 220px;
+      }
+      
+      .cover-art {
+        width: 180px;
+        height: 180px;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-particles" id="particles"></div>
+
+  <div class="container">
+    <h1>Daily Music Player</h1>
+    <p class="subtitle">Enjoy music that matches your day</p>
+    
+    <div class="mode-selector">
+      <div class="mode-btn active" id="mode-daily">Daily Music</div>
+      <div class="mode-btn" id="mode-file">My Files</div>
+    </div>
+    
+    <div class="song-info">
+      <div class="song-chip" id="song-chip">
+        Loading today's vibe...
+      </div>
+    </div>
+    
+    <div class="player-container">
+      <div class="player-disc" id="player-disc"></div>
+      <div class="player-center" id="player-center">DAY 1</div>
+    </div>
+    
+    <img class="cover-art" id="cover-art" src="" alt="Album Art">
+    
+    <div class="visualizer" id="visualizer"></div>
+    
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+      <div class="time-display">
+        <span id="current-time">0:00</span>
+        <span id="total-time">0:00</span>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <button id="play-btn"><i class="fas fa-play"></i> Play</button>
+      <button id="file-btn" style="display:none;"><i class="fas fa-file"></i> Select File</button>
+      <button id="prev-btn"><i class="fas fa-step-backward"></i> Prev</button>
+      <button id="next-btn"><i class="fas fa-step-forward"></i> Next</button>
+    </div>
+    
+    <div class="volume-control">
+      <i class="fas fa-volume-up"></i>
+      <input type="range" min="0" max="100" value="70" class="volume-slider" id="volume-slider">
+    </div>
+    
+    <input type="file" id="file-input" accept="audio/*" style="display: none;">
+    <audio id="audio-player" style="display: none;"></audio>
+  </div>
+  
+  <script>
+    // Initialize variables
+    let progressInterval;
+    let audioContext;
+    let analyser;
+    let visualizerBars = [];
+    let currentVolume = 70;
+    let currentMode = 'daily';
+    let currentTrackIndex = 0;
+    let streakCount = localStorage.getItem('musicStreak') || 0;
+    const state = { isPlaying: false }; // Added state object
+
+    // Modified daily music tracks to use local files
+    const dailyMusic = [
+      {
+        day: 0, // Sunday
+        title: "🌞 Sunday Relaxation",
+        artist: "Chill Vibes",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/KhQeL7a.jpg",
+        color: "#4ECDC4",
+        lyrics: [
+          "Lazy Sunday morning",
+          "Sunlight through the window",
+          "No need to hurry",
+          "Just take it slow"
+        ]
+      },
+      {
+        day: 1, // Monday
+        title: "💪 Monday Motivation",
+        artist: "Energy Boost",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/8Z3Qy4j.jpg",
+        color: "#6B73FF",
+        lyrics: [
+          "New week begins",
+          "Time to rise and shine",
+          "Set your goals high",
+          "You'll do just fine"
+        ]
+      },
+      {
+        day: 2, // Tuesday
+        title: "🚀 Tuesday Groove",
+        artist: "Midweek Mix",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/JqYeZ0V.jpg",
+        color: "#FF9A8B",
+        lyrics: [
+          "Finding your rhythm",
+          "Getting in the flow",
+          "Tuesday's moving",
+          "Watch yourself grow"
+        ]
+      },
+      {
+        day: 3, // Wednesday
+        title: "🌈 Hump Day",
+        artist: "Weekday Warriors",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/m9VQxtu.jpg",
+        color: "#FF6B6B",
+        lyrics: [
+          "Over the hump now",
+          "Halfway through",
+          "Keep pushing forward",
+          "You know what to do"
+        ]
+      },
+      {
+        day: 4, // Thursday
+        title: "✨ Thursday Night",
+        artist: "Pre-Weekend",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/KhQeL7a.jpg",
+        color: "#C471ED",
+        lyrics: [
+          "Almost there now",
+          "Weekend in sight",
+          "Thursday night magic",
+          "Everything's right"
+        ]
+      },
+      {
+        day: 5, // Friday
+        title: "🎉 Friday Party",
+        artist: "Weekend Starts",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/8Z3Qy4j.jpg",
+        color: "#12C2E9",
+        lyrics: [
+          "Friday at last",
+          "Time to celebrate",
+          "All week's hard work",
+          "You made it great"
+        ]
+      },
+      {
+        day: 6, // Saturday
+        title: "🎶 Saturday Vibes",
+        artist: "Weekend Beats",
+        audioUrl: "music/monday.mp3", // Changed to local file
+        imageUrl: "https://i.imgur.com/JqYeZ0V.jpg",
+        color: "#FFCC00",
+        lyrics: [
+          "No alarms today",
+          "Sleeping in is fine",
+          "Saturday freedom",
+          "The world is mine"
+        ]
+      }
+    ];
+    // Initialize when ready
+    $(document).ready(function() {
+      createParticles();
+      updateStreak();
+      initVisualizer();
+      initPlayer();
+      initButtons();
+      loadDailyMusic();
+    });
+
+    function createParticles() {
+      const particlesContainer = $('#particles');
+      particlesContainer.empty();
+      
+      for (let i = 0; i < 30; i++) {
+        const particle = $('<div>').addClass('particle');
+        
+        const size = Math.random() * 10 + 2;
+        const posX = Math.random() * 100;
+        const posY = Math.random() * 100;
+        const duration = Math.random() * 20 + 10;
+        const delay = Math.random() * 5;
+        const opacity = Math.random() * 0.5 + 0.1;
+        
+        particle.css({
+          width: `${size}px`,
+          height: `${size}px`,
+          left: `${posX}%`,
+          top: `${posY}%`,
+          background: `rgba(255,255,255,${opacity})`,
+          animationDuration: `${duration}s`,
+          animationDelay: `${delay}s`
+        });
+        
+        particlesContainer.append(particle);
+      }
+    }
+
+    function updateStreak() {
+      const today = new Date().toDateString();
+      const lastVisit = localStorage.getItem('lastVisit');
+      
+      if (lastVisit !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (lastVisit === yesterday.toDateString()) {
+          streakCount++;
+        } else if (lastVisit !== null) {
+          streakCount = 1;
+        }
+        
+        localStorage.setItem('musicStreak', streakCount);
+        localStorage.setItem('lastVisit', today);
+      }
+      
+      $('#player-center').text(`DAY ${streakCount}`);
+    }
+
+    function initVisualizer() {
+      const visualizer = $('#visualizer');
+      visualizer.empty();
+      
+      for (let i = 0; i < 32; i++) {
+        visualizer.append($('<div>').addClass('visualizer-bar'));
+      }
+      
+      visualizerBars = $('.visualizer-bar').toArray();
+      updateVisualizer();
+    }
+
+    function updateVisualizer() {
+      if (!state.isPlaying || !analyser) {
+        visualizerBars.forEach(bar => {
+          bar.style.height = '10px';
+          bar.style.opacity = '0.3';
+        });
+        requestAnimationFrame(updateVisualizer);
+        return;
+      }
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+      
+      visualizerBars.forEach((bar, i) => {
+        const value = dataArray[i % bufferLength] / 255;
+        bar.style.height = `${10 + (value * 100)}px`;
+        bar.style.opacity = 0.3 + (value * 0.7);
+      });
+      
+      requestAnimationFrame(updateVisualizer);
+    }
+
+    function initPlayer() {
+      const audioPlayer = $('#audio-player')[0];
+      
+      audioPlayer.addEventListener('play', function() {
+        state.isPlaying = true;
+        $('#play-btn').html('<i class="fas fa-pause"></i> Pause');
+        $('#player-disc').addClass('spin');
+        updateProgressBar();
+        setupAudioContext();
+        
+        // Pulse animation
+        $('#cover-art').css('animation', 'pulse 2s infinite');
+      });
+      
+      audioPlayer.addEventListener('pause', function() {
+        state.isPlaying = false;
+        $('#play-btn').html('<i class="fas fa-play"></i> Play');
+        $('#player-disc').removeClass('spin');
+        
+        // Stop pulse animation
+        $('#cover-art').css('animation', '');
+      });
+      
+      audioPlayer.addEventListener('ended', function() {
+        if (currentMode === 'daily') {
+          playNextTrack();
+        }
+      });
+      
+      audioPlayer.addEventListener('timeupdate', function() {
+        updateTimeDisplay(audioPlayer.currentTime, audioPlayer.duration);
+      });
+      
+      audioPlayer.addEventListener('volumechange', function() {
+        currentVolume = audioPlayer.volume * 100;
+        $('#volume-slider').val(currentVolume);
+      });
+    }
+
+    function setupAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        
+        const source = audioContext.createMediaElementSource($('#audio-player')[0]);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+      }
+    }
+
+    function loadDailyMusic() {
+      const today = new Date().getDay();
+      currentTrackIndex = today;
+      playCurrentTrack();
+    }
+
+    function playCurrentTrack() {
+      const track = dailyMusic[currentTrackIndex];
+      const audioPlayer = $('#audio-player')[0];
+      
+      audioPlayer.src = track.audioUrl;
+      $('#song-chip').text(track.title).css('color', track.color);
+      $('#cover-art').attr('src', track.imageUrl).show();
+      
+      // Update theme color
+      $('body').css('--theme-color', track.color);
+      
+      // Apply visual effects
+      applyVisualEffects(track.color);
+      
+      // Try to autoplay (may be blocked by browser)
+      audioPlayer.play().catch(e => {
+        console.log("Autoplay blocked:", e);
+      });
+    }
+
+    function applyVisualEffects(color) {
+      const effects = $('<div>').css({
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: `radial-gradient(circle, ${color}20 0%, transparent 70%)`,
+        zIndex: -1,
+        pointerEvents: 'none',
+        opacity: 0.3
+      });
+      
+      $('#status-effects').remove();
+      effects.attr('id', 'status-effects');
+      $('body').append(effects);
+    }
+
+    function playNextTrack() {
+      currentTrackIndex = (currentTrackIndex + 1) % dailyMusic.length;
+      playCurrentTrack();
+      
+      // Animation
+      $('#cover-art').css('transform', 'scale(0.8)').animate(
+        { 'transform': 'scale(1)' }, 300
+      );
+    }
+
+    function playPrevTrack() {
+      currentTrackIndex = (currentTrackIndex - 1 + dailyMusic.length) % dailyMusic.length;
+      playCurrentTrack();
+      
+      // Animation
+      $('#cover-art').css('transform', 'scale(0.8)').animate(
+        { 'transform': 'scale(1)' }, 300
+      );
+    }
+
+    function updateTimeDisplay(current, total) {
+      const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      };
+      
+      $('#current-time').text(formatTime(current));
+      $('#total-time').text(formatTime(total));
+      
+      if (total > 0) {
+        const progress = (current / total) * 100;
+        $('#progress-bar').css('width', `${progress}%`);
+      }
+    }
+
+    function updateProgressBar() {
+      if (progressInterval) clearInterval(progressInterval);
+      
+      progressInterval = setInterval(() => {
+        const audioPlayer = $('#audio-player')[0];
+        if (!state.isPlaying || audioPlayer.paused) {
+          clearInterval(progressInterval);
+          return;
+        }
+        
+        const currentTime = audioPlayer.currentTime;
+        const duration = audioPlayer.duration;
+        
+        if (duration > 0) {
+          const progress = (currentTime / duration) * 100;
+          $('#progress-bar').css('width', `${progress}%`);
+          updateTimeDisplay(currentTime, duration);
+        }
+      }, 1000);
+    }
+
+    function initButtons() {
+      // Play/Pause button
+      $('#play-btn').click(function() {
+        const audioPlayer = $('#audio-player')[0];
+        
+        if (audioPlayer.paused) {
+          audioPlayer.play().catch(e => {
+            showError("Playback failed. Please interact with the page first.");
+          });
+        } else {
+          audioPlayer.pause();
+        }
+      });
+      
+      // Previous track
+      $('#prev-btn').click(function() {
+        if (currentMode === 'daily') {
+          playPrevTrack();
+        }
+      });
+      
+      // Next track
+      $('#next-btn').click(function() {
+        if (currentMode === 'daily') {
+          playNextTrack();
+        }
+      });
+      
+      // Volume control
+      $('#volume-slider').on('input', function() {
+        currentVolume = $(this).val();
+        $('#audio-player')[0].volume = currentVolume / 100;
+      });
+      
+      // Mode switcher
+      $('#mode-daily').click(function() {
+        currentMode = 'daily';
+        $('.mode-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#file-btn').hide();
+        loadDailyMusic();
+      });
+      
+      $('#mode-file').click(function() {
+        currentMode = 'file';
+        $('.mode-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#file-btn').show();
+        $('#audio-player')[0].pause();
+      });
+      
+      // File selection
+      $('#file-btn').click(function() {
+        $('#file-input').click();
+      });
+      
+      $('#file-input').change(function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.includes('audio')) {
+          showError("Please select an audio file");
+          return;
+        }
+        
+        const audioPlayer = $('#audio-player')[0];
+        audioPlayer.src = URL.createObjectURL(file);
+        
+        // Update UI
+        $('#song-chip').text(file.name).css('color', '#ffffff');
+        $('#cover-art').attr('src', '').hide();
+        
+        // Try to play
+        audioPlayer.play().catch(e => {
+          showError("Playback failed. Click play to start.");
+        });
+      });
+      
+      // Disc click
+      $('#player-disc').click(function() {
+        const audioPlayer = $('#audio-player')[0];
+        
+        if (audioPlayer.paused) {
+          audioPlayer.play().catch(e => {
+            showError("Playback failed. Please interact with the page first.");
+          });
+        } else {
+          audioPlayer.pause();
+        }
+      });
+    }
+
+    function showError(message) {
+      const error = $('<div>').addClass('error-message').text(message);
+      $('.container').append(error);
+      
+      setTimeout(() => {
+        error.fadeOut(() => error.remove());
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
